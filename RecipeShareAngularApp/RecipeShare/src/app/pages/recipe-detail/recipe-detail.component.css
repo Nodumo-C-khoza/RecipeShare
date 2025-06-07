@@ -1,0 +1,72 @@
+.container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.error-message {
+  color: #f44336;
+  text-align: center;
+  padding: 20px;
+}
+
+.recipe-detail {
+  margin-top: 20px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.recipe-info {
+  display: flex;
+  gap: 24px;
+  margin: 16px 0;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section {
+  margin: 24px 0;
+}
+
+.section h3 {
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.metadata {
+  margin-top: 24px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.metadata p {
+  margin: 4px 0;
+}
+
+mat-divider {
+  margin: 16px 0;
+}
+
+mat-card-actions {
+  padding: 16px;
+  display: flex;
+  justify-content: flex-start;
+}
