@@ -14,14 +14,5 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/out ./
-
-# Set environment variables for performance
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-ENV DOTNET_RUNNING_IN_CONTAINER=true
-ENV ASPNETCORE_URLS=http://+:80
-
-# Expose port 80
 EXPOSE 80
-
-# Set the entry point
-ENTRYPOINT ["dotnet", "RecipeShare.dll"]
+ENTRYPOINT ["dotnet", "RecipeShareAPI.dll"]

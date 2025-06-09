@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RecipeShare.Data;
 using RecipeShare.Interfaces;
 using RecipeShare.Models;
 
@@ -18,10 +19,14 @@ namespace RecipeShare.Controllers
         }
 
         [HttpGet]
-        [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)] // Cache for 1 minute
         public async Task<ActionResult<PaginatedResult<RecipeListViewModel>>> GetRecipes(
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? searchQuery = null,
+            [FromQuery] string? tag = null,
+            [FromQuery] string? difficulty = null,
+            [FromQuery] int? maxTime = null,
+            [FromQuery] bool quickRecipes = false
         )
         {
             try
@@ -31,7 +36,15 @@ namespace RecipeShare.Controllers
                 if (pageSize < 1 || pageSize > 100)
                     pageSize = 20;
 
-                var result = await _recipeService.GetAllRecipesAsync(pageNumber, pageSize);
+                var result = await _recipeService.GetAllRecipesAsync(
+                    pageNumber,
+                    pageSize,
+                    searchQuery,
+                    tag,
+                    difficulty,
+                    maxTime,
+                    quickRecipes
+                );
 
                 var paginatedResult = new PaginatedResult<RecipeListViewModel>
                 {
@@ -62,66 +75,33 @@ namespace RecipeShare.Controllers
             return Ok(recipe);
         }
 
-        [HttpGet("tag/{tag}")]
-        public async Task<ActionResult<IEnumerable<RecipeListViewModel>>> GetRecipesByTag(
-            string tag
-        )
-        {
-            var recipes = await _recipeService.GetRecipesByDietaryTagAsync(tag);
-            return Ok(recipes);
-        }
-
-        [HttpGet("time/{maxMinutes}")]
-        public async Task<ActionResult<IEnumerable<RecipeListViewModel>>> GetRecipesByTime(
-            int maxMinutes
-        )
-        {
-            var recipes = await _recipeService.GetRecipesByTotalTimeAsync(maxMinutes);
-            return Ok(recipes);
-        }
-
-        [HttpGet("difficulty/{level}")]
-        public async Task<ActionResult<IEnumerable<RecipeListViewModel>>> GetRecipesByDifficulty(
-            string level
-        )
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<DietaryTag>>> GetAvailableDietaryTags()
         {
             try
             {
-                var recipes = await _recipeService.GetRecipesByDifficultyLevelAsync(level);
-                return Ok(recipes);
+                var tags = await _recipeService.GetAvailableDietaryTagsAsync();
+                return Ok(tags);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogError(ex, "Error retrieving dietary tags");
+                return StatusCode(500, "An error occurred while retrieving dietary tags");
             }
         }
 
-        [HttpGet("quick")]
-        public async Task<ActionResult<IEnumerable<RecipeListViewModel>>> GetQuickRecipes(
-            [FromQuery] int maxMinutes = 30
-        )
-        {
-            var recipes = await _recipeService.GetQuickRecipesAsync(maxMinutes);
-            return Ok(recipes);
-        }
-
-        [HttpGet("ingredients")]
-        public async Task<ActionResult<IEnumerable<RecipeListViewModel>>> GetRecipesByIngredients(
-            [FromQuery] string[] ingredients,
-            [FromQuery] bool matchAll = false
-        )
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<string>>> GetAvailableDifficultyLevels()
         {
             try
             {
-                var recipes = await _recipeService.GetRecipesByIngredientsAsync(
-                    ingredients,
-                    matchAll
-                );
-                return Ok(recipes);
+                var levels = await _recipeService.GetAvailableDifficultyLevelsAsync();
+                return Ok(levels);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogError(ex, "Error retrieving difficulty levels");
+                return StatusCode(500, "An error occurred while retrieving difficulty levels");
             }
         }
 
@@ -154,6 +134,7 @@ namespace RecipeShare.Controllers
                 {
                     return NotFound();
                 }
+
                 return Ok(recipe);
             }
             catch (ArgumentException ex)

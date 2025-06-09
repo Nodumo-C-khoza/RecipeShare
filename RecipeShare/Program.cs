@@ -2,6 +2,7 @@ using EasyCaching.Core;
 using Microsoft.EntityFrameworkCore;
 using RecipeShare.Data;
 using RecipeShare.Interfaces;
+using RecipeShare.Repository;
 using RecipeShare.Services;
 
 var builder = WebApplication.CreateBuilder(args);
