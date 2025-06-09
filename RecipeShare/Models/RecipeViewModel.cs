@@ -70,10 +70,12 @@ namespace RecipeShare.Models
         public string? ImageUrl { get; set; }
 
         public List<string>? DietaryTags { get; set; }
+        public List<int>? DietaryTagIds { get; set; }
         public List<CreateIngredientViewModel>? Ingredients { get; set; }
 
         [Required]
         public string? DifficultyLevel { get; set; }
+        public int? DifficultyLevelId { get; set; }
     }
 
     // For updating an existing recipe
@@ -111,9 +113,11 @@ namespace RecipeShare.Models
         public string? ImageUrl { get; set; }
 
         public List<string>? DietaryTags { get; set; }
+        public List<int>? DietaryTagIds { get; set; }
         public List<CreateIngredientViewModel>? Ingredients { get; set; }
 
         [Required]
         public string? DifficultyLevel { get; set; }
+        public int? DifficultyLevelId { get; set; }
     }
 }

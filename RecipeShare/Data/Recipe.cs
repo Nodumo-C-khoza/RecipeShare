@@ -12,8 +12,13 @@
         public string ImageUrl { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public List<string> DietaryTags { get; set; }
+
         public List<Ingredient> Ingredients { get; set; }
-        public string DifficultyLevel { get; set; } // Beginner, Intermediate, Advanced
+
+        public int DifficultyLevelId { get; set; }
+
+        public DifficultyLevel DifficultyLevel { get; set; } = null!;
+
+        public ICollection<DietaryTag> DietaryTags { get; set; } = new List<DietaryTag>();
     }
 }

@@ -16,11 +16,24 @@ namespace RecipeShare.Services
         public async Task<(
             IEnumerable<RecipeListViewModel> Recipes,
             int TotalCount
-        )> GetAllRecipesAsync(int pageNumber = 1, int pageSize = 20)
+        )> GetAllRecipesAsync(
+            int pageNumber = 1,
+            int pageSize = 20,
+            string? searchQuery = null,
+            string? tag = null,
+            string? difficulty = null,
+            int? maxTime = null,
+            bool quickRecipes = false
+        )
         {
             var (recipes, totalCount) = await _recipeRepository.GetAllRecipesAsync(
                 pageNumber,
-                pageSize
+                pageSize,
+                searchQuery,
+                tag,
+                difficulty,
+                maxTime,
+                quickRecipes
             );
             return (recipes.Select(MapToRecipeListViewModel), totalCount);
         }
@@ -42,28 +55,34 @@ namespace RecipeShare.Services
 
         public async Task<RecipeDetailViewModel> CreateRecipeAsync(CreateRecipeViewModel viewModel)
         {
-            // Business logic example: Validate total cooking time
-            if (viewModel.PrepTimeMinutes + viewModel.CookTimeMinutes > 480) // 8 hours
+            if (viewModel.PrepTimeMinutes + viewModel.CookTimeMinutes > 480)
             {
                 throw new ArgumentException("Total cooking time cannot exceed 8 hours");
             }
 
-            // Business logic example: Ensure dietary tags are valid
-            var validTags = new HashSet<string>
+            if (!viewModel.DifficultyLevelId.HasValue)
             {
-                "Vegetarian",
-                "Vegan",
-                "Gluten-Free",
-                "High-Protein",
-                "Low-Carb",
-                "Dessert"
-            };
+                throw new ArgumentException("Difficulty level ID is required");
+            }
+
+            var validTagIds = new HashSet<int> { 1, 2, 3, 4, 5, 6, 7 };
             if (
-                viewModel.DietaryTags != null
-                && viewModel.DietaryTags.Any(tag => !validTags.Contains(tag))
+                viewModel.DietaryTagIds != null
+                && viewModel.DietaryTagIds.Any(id => !validTagIds.Contains(id))
             )
             {
-                throw new ArgumentException("Invalid dietary tag provided");
+                throw new ArgumentException("Invalid dietary tag ID provided");
+            }
+
+            var difficultyLevels = await _recipeRepository.GetAvailableDifficultyLevelsAsync();
+            var difficultyLevel = difficultyLevels.FirstOrDefault(dl =>
+                dl.Id == viewModel.DifficultyLevelId.Value
+            );
+            if (difficultyLevel == null)
+            {
+                throw new ArgumentException(
+                    $"Difficulty level with ID {viewModel.DifficultyLevelId.Value} not found"
+                );
             }
 
             var recipe = new Recipe
@@ -75,7 +94,8 @@ namespace RecipeShare.Services
                 CookTimeMinutes = viewModel.CookTimeMinutes,
                 Servings = viewModel.Servings,
                 ImageUrl = viewModel.ImageUrl ?? string.Empty,
-                DietaryTags = viewModel.DietaryTags ?? new List<string>(),
+                DifficultyLevelId = viewModel.DifficultyLevelId.Value,
+                DifficultyLevel = difficultyLevel,
                 Ingredients =
                     viewModel
                         .Ingredients?.Select(i => new Ingredient
@@ -87,6 +107,14 @@ namespace RecipeShare.Services
                         .ToList() ?? new List<Ingredient>()
             };
 
+            if (viewModel.DietaryTagIds?.Any() == true)
+            {
+                var existingTags = await _recipeRepository.GetAvailableDietaryTagsAsync();
+                recipe.DietaryTags = viewModel
+                    .DietaryTagIds.Select(id => existingTags.First(t => t.Id == id))
+                    .ToList();
+            }
+
             var createdRecipe = await _recipeRepository.CreateRecipeAsync(recipe);
             return MapToRecipeDetailViewModel(createdRecipe);
         }
@@ -96,28 +124,20 @@ namespace RecipeShare.Services
             UpdateRecipeViewModel viewModel
         )
         {
-            // Business logic example: Validate total cooking time
-            if (viewModel.PrepTimeMinutes + viewModel.CookTimeMinutes > 480)
+            if (!viewModel.DifficultyLevelId.HasValue)
             {
-                throw new ArgumentException("Total cooking time cannot exceed 8 hours");
+                throw new ArgumentException("Difficulty level ID is required");
             }
 
-            // Business logic example: Ensure dietary tags are valid
-            var validTags = new HashSet<string>
+            var difficultyLevels = await _recipeRepository.GetAvailableDifficultyLevelsAsync();
+            var difficultyLevel = difficultyLevels.FirstOrDefault(dl =>
+                dl.Id == viewModel.DifficultyLevelId.Value
+            );
+            if (difficultyLevel == null)
             {
-                "Vegetarian",
-                "Vegan",
-                "Gluten-Free",
-                "High-Protein",
-                "Low-Carb",
-                "Dessert"
-            };
-            if (
-                viewModel.DietaryTags != null
-                && viewModel.DietaryTags.Any(tag => !validTags.Contains(tag))
-            )
-            {
-                throw new ArgumentException("Invalid dietary tag provided");
+                throw new ArgumentException(
+                    $"Difficulty level with ID {viewModel.DifficultyLevelId.Value} not found"
+                );
             }
 
             var recipe = new Recipe
@@ -130,7 +150,11 @@ namespace RecipeShare.Services
                 CookTimeMinutes = viewModel.CookTimeMinutes,
                 Servings = viewModel.Servings,
                 ImageUrl = viewModel.ImageUrl ?? string.Empty,
-                DietaryTags = viewModel.DietaryTags ?? new List<string>(),
+                DifficultyLevelId = viewModel.DifficultyLevelId.Value,
+                DifficultyLevel = difficultyLevel,
+                DietaryTags =
+                    viewModel.DietaryTagIds?.Select(id => new DietaryTag { Id = id }).ToList()
+                    ?? new List<DietaryTag>(),
                 Ingredients =
                     viewModel
                         .Ingredients?.Select(i => new Ingredient
@@ -203,6 +227,17 @@ namespace RecipeShare.Services
             return recipes.Select(MapToRecipeListViewModel);
         }
 
+        public async Task<IEnumerable<DietaryTag>> GetAvailableDietaryTagsAsync()
+        {
+            return await _recipeRepository.GetAvailableDietaryTagsAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetAvailableDifficultyLevelsAsync()
+        {
+            var levels = await _recipeRepository.GetAvailableDifficultyLevelsAsync();
+            return levels.Select(l => l.Name);
+        }
+
         private static RecipeListViewModel MapToRecipeListViewModel(Recipe recipe)
         {
             return new RecipeListViewModel
@@ -213,8 +248,8 @@ namespace RecipeShare.Services
                 PrepTimeMinutes = recipe.PrepTimeMinutes,
                 CookTimeMinutes = recipe.CookTimeMinutes,
                 ImageUrl = recipe.ImageUrl,
-                DietaryTags = recipe.DietaryTags,
-                DifficultyLevel = recipe.DifficultyLevel
+                DietaryTags = recipe.DietaryTags.Select(dt => dt.Name).ToList(),
+                DifficultyLevel = recipe.DifficultyLevel.Name
             };
         }
 
@@ -232,8 +267,8 @@ namespace RecipeShare.Services
                 ImageUrl = recipe.ImageUrl,
                 CreatedAt = recipe.CreatedAt,
                 UpdatedAt = recipe.UpdatedAt,
-                DietaryTags = recipe.DietaryTags,
-                DifficultyLevel = recipe.DifficultyLevel,
+                DietaryTags = recipe.DietaryTags.Select(dt => dt.Name).ToList(),
+                DifficultyLevel = recipe.DifficultyLevel?.Name ?? string.Empty,
                 Ingredients = recipe
                     .Ingredients?.Select(i => new IngredientViewModel
                     {

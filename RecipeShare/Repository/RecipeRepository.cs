@@ -1,18 +1,23 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using EasyCaching.Core;
 using Microsoft.EntityFrameworkCore;
 using RecipeShare.Data;
 using RecipeShare.Interfaces;
+using RecipeShare.Models;
 
-namespace RecipeShare.Services
+namespace RecipeShare.Repository
 {
     public class RecipeRepository : IRecipeRepository
     {
         private readonly ApplicationDbContext _context;
         private readonly IEasyCachingProvider _cache;
         private const int DefaultPageSize = 20;
-        private const string RecipeListCacheKey = "recipe:list:{0}:{1}"; // {pageNumber}_{pageSize}
-        private const string RecipeByIdCacheKey = "recipe:{0}"; // {id}
-        private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromMinutes(5);
+        private const string RecipeListCacheKey = "recipe:list:{0}:{1}";
+        private const string RecipeByIdCacheKey = "recipe:{0}";
+        private static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromSeconds(30);
 
         public RecipeRepository(ApplicationDbContext context, IEasyCachingProvider cache)
         {
@@ -22,7 +27,12 @@ namespace RecipeShare.Services
 
         public async Task<(IEnumerable<Recipe> Recipes, int TotalCount)> GetAllRecipesAsync(
             int pageNumber = 1,
-            int pageSize = DefaultPageSize
+            int pageSize = 20,
+            string? searchQuery = null,
+            string? tag = null,
+            string? difficulty = null,
+            int? maxTime = null,
+            bool quickRecipes = false
         )
         {
             var cacheKey = string.Format(RecipeListCacheKey, pageNumber, pageSize);
@@ -33,30 +43,50 @@ namespace RecipeShare.Services
                 return cacheValue.Value;
             }
 
-            var totalCount = await _context.Recipes.CountAsync();
+            var query = _context
+                .Recipes.Include(r => r.Ingredients)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
+                .AsQueryable();
 
-            var recipes = await _context
-                .Recipes.AsNoTracking()
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                query = query.Where(r =>
+                    r.Title.Contains(searchQuery) || r.Description.Contains(searchQuery)
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+                query = query.Where(r => r.DietaryTags.Any(dt => dt.Name == tag));
+            }
+
+            if (!string.IsNullOrWhiteSpace(difficulty))
+            {
+                query = query.Where(r => r.DifficultyLevel.Name == difficulty);
+            }
+
+            if (maxTime.HasValue)
+            {
+                query = query.Where(r => (r.PrepTimeMinutes + r.CookTimeMinutes) <= maxTime.Value);
+            }
+
+            if (quickRecipes)
+            {
+                query = query.Where(r => (r.PrepTimeMinutes + r.CookTimeMinutes) <= 30);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var recipes = await query
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(r => new Recipe
-                {
-                    Id = r.Id,
-                    Title = r.Title,
-                    Description = r.Description,
-                    PrepTimeMinutes = r.PrepTimeMinutes,
-                    CookTimeMinutes = r.CookTimeMinutes,
-                    ImageUrl = r.ImageUrl,
-                    DietaryTags = r.DietaryTags,
-                    DifficultyLevel = r.DifficultyLevel,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt
-                })
                 .ToListAsync();
 
             var result = (recipes, totalCount);
             await _cache.SetAsync(cacheKey, result, DefaultCacheDuration);
+
             return result;
         }
 
@@ -73,6 +103,8 @@ namespace RecipeShare.Services
             var recipe = await _context
                 .Recipes.AsNoTracking()
                 .Include(r => r.Ingredients)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (recipe != null)
@@ -87,7 +119,9 @@ namespace RecipeShare.Services
         {
             return await _context
                 .Recipes.Include(r => r.Ingredients)
-                .Where(r => r.DietaryTags.Contains(tag))
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
+                .Where(r => r.DietaryTags.Any(dt => dt.Name == tag))
                 .ToListAsync();
         }
 
@@ -97,7 +131,6 @@ namespace RecipeShare.Services
             _context.Recipes.Add(recipe);
             await _context.SaveChangesAsync();
 
-            // Invalidate all recipe list caches
             await _cache.RemoveByPrefixAsync("recipe:list:");
 
             return recipe;
@@ -107,6 +140,8 @@ namespace RecipeShare.Services
         {
             var existingRecipe = await _context
                 .Recipes.Include(r => r.Ingredients)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
                 .FirstOrDefaultAsync(r => r.Id == recipe.Id);
 
             if (existingRecipe == null)
@@ -119,16 +154,20 @@ namespace RecipeShare.Services
             existingRecipe.CookTimeMinutes = recipe.CookTimeMinutes;
             existingRecipe.Servings = recipe.Servings;
             existingRecipe.ImageUrl = recipe.ImageUrl;
-            existingRecipe.DietaryTags = recipe.DietaryTags;
+            existingRecipe.DifficultyLevelId = recipe.DifficultyLevelId;
             existingRecipe.UpdatedAt = DateTime.UtcNow;
 
-            // Update ingredients
+            existingRecipe.DietaryTags.Clear();
+            var dietaryTags = await _context
+                .DietaryTags.Where(dt => recipe.DietaryTags.Select(t => t.Id).Contains(dt.Id))
+                .ToListAsync();
+            existingRecipe.DietaryTags = dietaryTags;
+
             _context.Ingredients.RemoveRange(existingRecipe.Ingredients);
             existingRecipe.Ingredients = recipe.Ingredients;
 
             await _context.SaveChangesAsync();
 
-            // Invalidate both recipe-specific and list caches
             await _cache.RemoveAsync(string.Format(RecipeByIdCacheKey, recipe.Id));
             await _cache.RemoveByPrefixAsync("recipe:list:");
 
@@ -144,7 +183,6 @@ namespace RecipeShare.Services
             _context.Recipes.Remove(recipe);
             await _context.SaveChangesAsync();
 
-            // Invalidate both recipe-specific and list caches
             await _cache.RemoveAsync(string.Format(RecipeByIdCacheKey, id));
             await _cache.RemoveByPrefixAsync("recipe:list:");
 
@@ -155,6 +193,8 @@ namespace RecipeShare.Services
         {
             return await _context
                 .Recipes.Include(r => r.Ingredients)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
                 .Where(r => r.PrepTimeMinutes + r.CookTimeMinutes <= maxMinutes)
                 .ToListAsync();
         }
@@ -165,7 +205,9 @@ namespace RecipeShare.Services
         {
             return await _context
                 .Recipes.Include(r => r.Ingredients)
-                .Where(r => r.DifficultyLevel == difficultyLevel)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
+                .Where(r => r.DifficultyLevel.Name == difficultyLevel)
                 .ToListAsync();
         }
 
@@ -173,6 +215,8 @@ namespace RecipeShare.Services
         {
             return await _context
                 .Recipes.Include(r => r.Ingredients)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
                 .Where(r => r.PrepTimeMinutes + r.CookTimeMinutes <= maxMinutes)
                 .ToListAsync();
         }
@@ -184,11 +228,14 @@ namespace RecipeShare.Services
         {
             var normalizedIngredients = ingredients.Select(i => i.ToLower().Trim()).ToList();
 
-            var query = _context.Recipes.Include(r => r.Ingredients).AsQueryable();
+            var query = _context
+                .Recipes.Include(r => r.Ingredients)
+                .Include(r => r.DifficultyLevel)
+                .Include(r => r.DietaryTags)
+                .AsQueryable();
 
             if (matchAll)
             {
-                // Match all ingredients (AND condition)
                 foreach (var ingredient in normalizedIngredients)
                 {
                     query = query.Where(r =>
@@ -198,7 +245,6 @@ namespace RecipeShare.Services
             }
             else
             {
-                // Match any ingredient (OR condition)
                 query = query.Where(r =>
                     r.Ingredients.Any(i =>
                         normalizedIngredients.Any(searchIngredient =>
@@ -209,6 +255,16 @@ namespace RecipeShare.Services
             }
 
             return await query.ToListAsync();
+        }
+
+        public async Task<IEnumerable<DietaryTag>> GetAvailableDietaryTagsAsync()
+        {
+            return await _context.DietaryTags.OrderBy(t => t.Name).ToListAsync();
+        }
+
+        public async Task<IEnumerable<DifficultyLevel>> GetAvailableDifficultyLevelsAsync()
+        {
+            return await _context.DifficultyLevels.OrderBy(l => l.Name).ToListAsync();
         }
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RecipeShare.Data;
 using RecipeShare.Models;
 
 namespace RecipeShare.Interfaces
@@ -8,7 +9,12 @@ namespace RecipeShare.Interfaces
     {
         Task<(IEnumerable<RecipeListViewModel> Recipes, int TotalCount)> GetAllRecipesAsync(
             int pageNumber = 1,
-            int pageSize = 20
+            int pageSize = 20,
+            string? searchQuery = null,
+            string? tag = null,
+            string? difficulty = null,
+            int? maxTime = null,
+            bool quickRecipes = false
         );
         Task<RecipeDetailViewModel> GetRecipeByIdAsync(int id);
         Task<IEnumerable<RecipeListViewModel>> GetRecipesByDietaryTagAsync(string tag);
@@ -24,5 +30,7 @@ namespace RecipeShare.Interfaces
             IEnumerable<string> ingredients,
             bool matchAll = false
         );
+        Task<IEnumerable<DietaryTag>> GetAvailableDietaryTagsAsync();
+        Task<IEnumerable<string>> GetAvailableDifficultyLevelsAsync();
     }
 }
