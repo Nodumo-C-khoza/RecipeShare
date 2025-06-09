@@ -13,12 +13,13 @@ export interface Recipe {
     prepTimeMinutes: number;
     cookTimeMinutes: number;
     servings: number;
-    imageUrl: string;
+    imageUrl?: string;
     createdAt: Date;
     updatedAt: Date;
-    dietaryTags: string[];
-    ingredients: Ingredient[];
+    dietaryTags: (string | { id: number; name: string; displayName: string; description: string; recipes: any[] })[];
     difficultyLevel: string;
+    difficultyLevelId: number;
+    ingredients: Ingredient[];
 }
 
 export interface CreateRecipe {
@@ -28,10 +29,11 @@ export interface CreateRecipe {
     prepTimeMinutes: number;
     cookTimeMinutes: number;
     servings: number;
-    imageUrl: string;
-    dietaryTags: string[];
+    imageUrl?: string;
+    dietaryTagIds: number[];
     ingredients: CreateIngredient[];
     difficultyLevel: string;
+    difficultyLevelId: number;
 }
 
 export interface CreateIngredient {
@@ -46,4 +48,47 @@ export interface PaginatedResult<T> {
     pageNumber: number;
     pageSize: number;
     totalPages: number;
+}
+
+export interface RecipeListViewModel {
+    id: number;
+    title: string;
+    description: string;
+    prepTimeMinutes: number;
+    cookTimeMinutes: number;
+    servings: number;
+    difficultyLevel: string;
+    dietaryTags: string[];
+    imageUrl?: string;
+}
+
+export interface RecipeDetailViewModel extends RecipeListViewModel {
+    ingredients: IngredientViewModel[];
+    instructions: string[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface IngredientViewModel {
+    id: number;
+    name: string;
+    amount: string;
+    unit: string;
+}
+
+export interface CreateRecipeViewModel {
+    title: string;
+    description: string;
+    prepTimeMinutes: number;
+    cookTimeMinutes: number;
+    servings: number;
+    difficultyLevel: string;
+    dietaryTags: string[];
+    ingredients: IngredientViewModel[];
+    instructions: string[];
+    imageUrl?: string;
+}
+
+export interface UpdateRecipeViewModel extends CreateRecipeViewModel {
+    id: number;
 }

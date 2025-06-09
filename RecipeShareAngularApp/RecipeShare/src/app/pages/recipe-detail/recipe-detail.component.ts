@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,6 +17,7 @@ import { Recipe } from '../../models/recipe';
   imports: [
     CommonModule,
     RouterModule,
+    HttpClientModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -33,6 +35,7 @@ export class RecipeDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    public router: Router,
     private recipeService: RecipeService
   ) {}
 
@@ -73,6 +76,6 @@ export class RecipeDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    window.history.back();
+    this.router.navigate(['/recipes']);
   }
 }

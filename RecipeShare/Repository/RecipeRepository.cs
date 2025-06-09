@@ -131,7 +131,6 @@ namespace RecipeShare.Repository
             _context.Recipes.Add(recipe);
             await _context.SaveChangesAsync();
 
-            // Invalidate all recipe list caches
             await _cache.RemoveByPrefixAsync("recipe:list:");
 
             return recipe;
@@ -188,7 +187,6 @@ namespace RecipeShare.Repository
             _context.Recipes.Remove(recipe);
             await _context.SaveChangesAsync();
 
-            // Invalidate both recipe-specific and list caches
             await _cache.RemoveAsync(string.Format(RecipeByIdCacheKey, id));
             await _cache.RemoveByPrefixAsync("recipe:list:");
 
@@ -242,7 +240,6 @@ namespace RecipeShare.Repository
 
             if (matchAll)
             {
-                // Match all ingredients (AND condition)
                 foreach (var ingredient in normalizedIngredients)
                 {
                     query = query.Where(r =>
@@ -252,7 +249,6 @@ namespace RecipeShare.Repository
             }
             else
             {
-                // Match any ingredient (OR condition)
                 query = query.Where(r =>
                     r.Ingredients.Any(i =>
                         normalizedIngredients.Any(searchIngredient =>

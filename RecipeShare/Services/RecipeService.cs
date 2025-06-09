@@ -55,8 +55,7 @@ namespace RecipeShare.Services
 
         public async Task<RecipeDetailViewModel> CreateRecipeAsync(CreateRecipeViewModel viewModel)
         {
-            // Business logic example: Validate total cooking time
-            if (viewModel.PrepTimeMinutes + viewModel.CookTimeMinutes > 480) // 8 hours
+            if (viewModel.PrepTimeMinutes + viewModel.CookTimeMinutes > 480)
             {
                 throw new ArgumentException("Total cooking time cannot exceed 8 hours");
             }
@@ -111,7 +110,6 @@ namespace RecipeShare.Services
                         .ToList() ?? new List<Ingredient>()
             };
 
-            // Load existing dietary tags
             if (viewModel.DietaryTagIds?.Any() == true)
             {
                 var existingTags = await _recipeRepository.GetAvailableDietaryTagsAsync();
@@ -129,13 +127,11 @@ namespace RecipeShare.Services
             UpdateRecipeViewModel viewModel
         )
         {
-            // Validate difficulty level ID
             if (!viewModel.DifficultyLevelId.HasValue)
             {
                 throw new ArgumentException("Difficulty level ID is required");
             }
 
-            // Get the existing difficulty level
             var difficultyLevels = await _recipeRepository.GetAvailableDifficultyLevelsAsync();
             var difficultyLevel = difficultyLevels.FirstOrDefault(dl =>
                 dl.Id == viewModel.DifficultyLevelId.Value
