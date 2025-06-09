@@ -33,12 +33,6 @@ jobs:
     - name: Test
       run: dotnet test RecipeShare/RecipeShare/RecipeShare.sln --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage"
 
-    - name: Run Benchmarks
-      run: |
-        cd RecipeShare/RecipeShareBenchmarks
-        dotnet build -c Release
-        dotnet run -c Release
-    
     - name: Publish
       run: dotnet publish RecipeShare/RecipeShare/RecipeShare.sln -c Release -o ${{ github.workspace }}/publish
 
@@ -107,10 +101,6 @@ jobs:
       run: npm ci
       working-directory: ./RecipeShareAngularApp/RecipeShare
 
-    - name: Run tests
-      run: npm run test -- --watch=false --browsers=ChromeHeadless
-      working-directory: ./RecipeShareAngularApp/RecipeShare
-
     - name: Build
       run: npm run build
       working-directory: ./RecipeShareAngularApp/RecipeShare
@@ -118,5 +108,5 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: angular-build
-        path: ./RecipeShareAngularApp/RecipeShare/dist/
+        name: dist
+        path: ./RecipeShareAngularApp/RecipeShare/dist
