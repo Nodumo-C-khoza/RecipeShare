@@ -20,13 +20,13 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore RecipeShare/RecipeShare/RecipeShare.sln
 
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build RecipeShare/RecipeShare/RecipeShare.sln --no-restore
 
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test RecipeShare/RecipeShare/RecipeShare.sln --no-build --verbosity normal
 
     - name: Run Benchmarks
       run: |
@@ -34,7 +34,7 @@ jobs:
         dotnet run -c Release
     
     - name: Publish
-      run: dotnet publish -c Release -o ${{ github.workspace }}/publish
+      run: dotnet publish RecipeShare/RecipeShare/RecipeShare.sln -c Release -o ${{ github.workspace }}/publish
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
@@ -57,12 +57,10 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ./RecipeShare
+      run: dotnet restore RecipeShare/RecipeShare/RecipeShare.sln
 
     - name: Build
-      run: dotnet build --no-restore --configuration Release
-      working-directory: ./RecipeShare
+      run: dotnet build RecipeShare/RecipeShare/RecipeShare.sln --no-restore --configuration Release
 
     - name: Run NUnit tests
       run: |
