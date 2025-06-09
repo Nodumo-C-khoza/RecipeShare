@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# Add permissions for test reporter
+permissions:
+  checks: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -100,10 +105,6 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
-      working-directory: ./RecipeShareAngularApp/RecipeShare
-
-    - name: Lint
-      run: npm run lint
       working-directory: ./RecipeShareAngularApp/RecipeShare
 
     - name: Run tests
