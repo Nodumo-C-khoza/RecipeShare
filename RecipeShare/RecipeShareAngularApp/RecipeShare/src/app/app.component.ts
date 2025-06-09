@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet, RouterModule } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [
     RouterOutlet,
     RouterModule,
+    HttpClientModule,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule

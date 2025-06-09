@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -34,6 +35,7 @@ interface DietaryTag {
   imports: [
     CommonModule,
     RouterModule,
+    HttpClientModule,
     MatTableModule,
     MatButtonModule,
     MatIconModule,

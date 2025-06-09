@@ -9,8 +9,13 @@ import { of } from 'rxjs';
 describe('RecipeDetailComponent', () => {
   let component: RecipeDetailComponent;
   let fixture: ComponentFixture<RecipeDetailComponent>;
+  let recipeService: jasmine.SpyObj<RecipeService>;
 
   beforeEach(async () => {
+    const spy = jasmine.createSpyObj('RecipeService', ['getRecipe', 'deleteRecipe']);
+    spy.getRecipe.and.returnValue(of({ id: 1, title: 'Test Recipe' }));
+    spy.deleteRecipe.and.returnValue(of(void 0));
+
     await TestBed.configureTestingModule({
       imports: [
         RecipeDetailComponent,
@@ -18,17 +23,22 @@ describe('RecipeDetailComponent', () => {
         RouterTestingModule
       ],
       providers: [
-        RecipeService,
+        { provide: RecipeService, useValue: spy },
         {
           provide: ActivatedRoute,
           useValue: {
-            params: of({ id: '1' })
+            snapshot: {
+              paramMap: {
+                get: () => '1'
+              }
+            }
           }
         }
       ]
     })
     .compileComponents();
     
+    recipeService = TestBed.inject(RecipeService) as jasmine.SpyObj<RecipeService>;
     fixture = TestBed.createComponent(RecipeDetailComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
