@@ -5,6 +5,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { RecipeService } from '../../services/recipe.service';
 import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('RecipeDetailComponent', () => {
   let component: RecipeDetailComponent;
@@ -20,7 +21,8 @@ describe('RecipeDetailComponent', () => {
       imports: [
         RecipeDetailComponent,
         HttpClientTestingModule,
-        RouterTestingModule
+        RouterTestingModule,
+        NoopAnimationsModule
       ],
       providers: [
         { provide: RecipeService, useValue: spy },
@@ -37,7 +39,7 @@ describe('RecipeDetailComponent', () => {
       ]
     })
     .compileComponents();
-    
+
     recipeService = TestBed.inject(RecipeService) as jasmine.SpyObj<RecipeService>;
     fixture = TestBed.createComponent(RecipeDetailComponent);
     component = fixture.componentInstance;
