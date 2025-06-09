@@ -26,11 +26,12 @@ jobs:
       run: dotnet build RecipeShare/RecipeShare/RecipeShare.sln --no-restore
 
     - name: Test
-      run: dotnet test RecipeShare/RecipeShare/RecipeShare.sln --no-build --verbosity normal
+      run: dotnet test RecipeShare/RecipeShare/RecipeShare.sln --no-build --verbosity normal --logger trx --collect:"XPlat Code Coverage"
 
     - name: Run Benchmarks
       run: |
         cd RecipeShare/RecipeShareBenchmarks
+        dotnet build -c Release
         dotnet run -c Release
     
     - name: Publish
@@ -64,9 +65,8 @@ jobs:
 
     - name: Run NUnit tests
       run: |
-        dotnet test ./RecipeShareTests/RecipeShareTests.csproj --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
-        dotnet test ./RecipeShareAPI/RecipeShareAPI.csproj --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
-      working-directory: ./RecipeShare
+        dotnet test RecipeShare/RecipeShareTests/RecipeShareTests.csproj --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        dotnet test RecipeShare/RecipeShare/RecipeShare.csproj --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
 
     - name: Publish test results
       uses: dorny/test-reporter@v1

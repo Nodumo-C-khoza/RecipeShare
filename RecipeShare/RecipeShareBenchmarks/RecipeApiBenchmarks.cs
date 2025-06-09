@@ -5,6 +5,7 @@ using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Loggers;
+using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using RecipeShare.Controllers;
 using RecipeShare.Models;
@@ -168,7 +169,7 @@ namespace RecipeShareBenchmarks
             AddColumn(StatisticColumn.Max);
             AddColumn(StatisticColumn.P95);
             AddColumn(StatisticColumn.OperationsPerSecond);
-            AddColumn(new MethodColumn()); // Add method name column
+            AddColumn(TargetMethodColumn.Method); // Updated to use TargetMethodColumn
 
             // Add exporters for results
             AddExporter(MarkdownExporter.GitHub);
