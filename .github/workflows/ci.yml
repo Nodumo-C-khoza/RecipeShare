@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
 
@@ -37,7 +37,7 @@ jobs:
       run: dotnet publish -c Release -o ${{ github.workspace }}/publish
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: publish
         path: ${{ github.workspace }}/publish
@@ -79,7 +79,7 @@ jobs:
         reporter: dotnet-trx
 
     - name: Upload test coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       if: success() || failure()
       with:
         files: '**/coverage.cobertura.xml'
@@ -112,8 +112,8 @@ jobs:
       run: npm run test -- --watch=false --browsers=ChromeHeadless
       working-directory: ./RecipeShareAngularApp/RecipeShare
 
-    - name: Build for production
-      run: npm run build -- --configuration production
+    - name: Build
+      run: npm run build
       working-directory: ./RecipeShareAngularApp/RecipeShare
 
     - name: Upload build artifacts
@@ -121,24 +121,3 @@ jobs:
       with:
         name: angular-build
         path: ./RecipeShareAngularApp/RecipeShare/dist/
-
-  # Optional: Deploy job (runs after successful build and test)
-  deploy:
-    needs: [backend, frontend]
-    runs-on: ubuntu-latest
-    name: Deploy (Production)
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: angular-build
-        path: ./dist
-
-    - name: Deploy to staging
-      run: |
-        echo "Deploying to staging environment..."
