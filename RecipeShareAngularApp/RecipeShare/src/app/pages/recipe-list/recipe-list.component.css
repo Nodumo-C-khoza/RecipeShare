@@ -1,0 +1,36 @@
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+table {
+  width: 100%;
+}
+
+.mat-mdc-card {
+  margin-bottom: 20px;
+}
+
+.mat-mdc-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.mat-column-actions {
+  width: 120px;
+  text-align: center;
+}
+
+.mat-column-cookingTime {
+  width: 150px;
+}
+
+.mat-column-difficulty {
+  width: 120px;
+}
